@@ -1,0 +1,9 @@
+Net::IMP::SMTP
+Base classes and classes for SMTP specific Net::IMP plugins
+
+This module is copyright by Steffen Ullrich.
+
+The module was developed while working on project APT-Sweeper
+(http://apt-sweeper.de) at genua gmbh (http://www.genua.de).
+The padiofire project was partly funded by BMBF (German Federal Ministry
+of Education an Research).
