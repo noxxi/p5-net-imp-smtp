@@ -5,7 +5,7 @@ package Net::IMP::SMTP;
 use Net::IMP qw(:DEFAULT IMP_DATA );
 use Exporter 'import';
 
-our $VERSION = '0.001';
+our $VERSION = '0.002';
 our @EXPORT;
 
 # create and export IMP_DATA_SMTP* constants
@@ -13,8 +13,9 @@ push @EXPORT, IMP_DATA( 'smtp',
     'command'    => +1,  # SMTP command
     'response'   => +2,  # response to SMTP command
     'greeting'   => +3,  # initial SMTP greeting
-    'mail'       => -4,  # payload of DATA command
-    'junk'       => -5,  # unexpected data, protocol error
+    'auth',      => +4,  # clients response inside auth handshake
+    'mail'       => -5,  # payload of DATA/BDAT command
+    'junk'       => -6,  # unexpected data, protocol error
 );
 
 use constant IMP_OFFSET_SMTP_EOMAIL => IMP_MAXOFFSET-1;
@@ -67,7 +68,7 @@ Steffen Ullrich, <sullr@cpan.org>
 
 =head1 COPYRIGHT
 
-Copyright 2016 Steffen Ullrich
+Copyright 2016..2017 Steffen Ullrich
 
 This library is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

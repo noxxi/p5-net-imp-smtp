@@ -3,17 +3,18 @@ use warnings;
 
 package Net::IMP::SMTP::Example::StripInternalHeaders;
 use base 'Net::IMP::SMTP::Base';
-use fields qw(offset head);
-use Net::IMP;
+use fields qw(offset hbuf);
+use Net::IMP 0.634;
 use Net::IMP::SMTP;
 
 my $MAXHEAD = 2**16; # maximum size of mail header
 
 sub RTYPES { ( IMP_PASS, IMP_PREPASS, IMP_REPLACE ) }
+
 sub new_analyzer {
     my ($factory,%args) = @_;
     my $analyzer = $factory->SUPER::new_analyzer(%args);
-    $analyzer->{head} = '';
+    $analyzer->{hbuf} = '';
 
     # we are only interested in data from client to server
     $analyzer->run_callback([IMP_PASS,1,IMP_MAXOFFSET]);
@@ -24,48 +25,48 @@ sub new_analyzer {
 sub data {
     my ($self,$dir,$data,$offset,$type) = @_;
 
-    $self->{offset}[$dir] = $offset if defined $offset;
+    $self->{offset}[$dir] = $offset if $offset;
     $self->{offset}[$dir] += length($data);
 
-    return $self->run_callback([ IMP_PASS,$dir,$offset ])
+    return $self->run_callback([ IMP_PASS,$dir,$self->{offset}[$dir] ])
 	if $type != IMP_DATA_SMTP_MAIL;
 
-    if (!defined $self->{head}) {
+    if (!defined $self->{hbuf}) {
 	# already done with header
 	return $self->run_callback([ IMP_PASS,$dir,IMP_OFFSET_SMTP_EOMAIL ])
     }
 
-    $self->{head} .= $data;
+    $self->{hbuf} .= $data;
     my $eoh = 
-	$data eq '' ? length($self->{head}) : 
-	$self->{head} =~m{\r?\n\r?\n}g ? $+[0] :
+	$data eq '' ? length($self->{hbuf}) : 
+	$self->{hbuf} =~m{\r?\n\r?\n}g ? $+[0] :
 	undef;
 
     if (!defined $eoh) {
-	return if length($self->{head}) < $MAXHEAD; # need more data
-	$self->{head} = undef;
+	return if length($self->{hbuf}) < $MAXHEAD; # need more data
+	$self->{hbuf} = undef;
 	return $self->run_callback([ IMP_DENY,$dir,"mail header too large" ]);
     }
 
-    my $head = substr($self->{head},0,$eoh);
-    my $offset_eohead = $self->{offset}[$dir] 
-	- length($self->{head}) + length($head);
-    $self->{head} = undef;
 
-    my $newhead = '';
+    my $head = substr($self->{hbuf},0,$eoh,'');
+
+    my $newbuf = '';
     while ($head =~m{^(
-	(?: From|To|Cc|Subject|Message-Id|References|In-Reply-To|Reply-To|Resent-\w+ )
+	(?: From|To|Cc|Subject|Message-Id|References|In-Reply-To|Reply-To|Resent-\w+|Content-type|Content-Transfer-Encoding )
 	:
 	[^\n]*
 	(?: \n[ \t].* )*
 	\n
-    )}xig) {
-	$newhead .= $_;
+    )}ximg) {
+	$newbuf .= $1;
     }
-    $newhead .= $head =~m{(\r?\n)} ? $1:"\r\n";
+    $newbuf .= $head =~m{(\r?\n)} ? $1:"\r\n";
+    $newbuf .= $self->{hbuf};
+    $self->{hbuf} = undef; # done with header
 
     return $self->run_callback(
-	[ IMP_REPLACE,$dir,$offset_eohead,$newdata ],
+	[ IMP_REPLACE,$dir,$self->{offset}[$dir],$newbuf ],
 	[ IMP_PASS,$dir,IMP_OFFSET_SMTP_EOMAIL ],
     )
 }

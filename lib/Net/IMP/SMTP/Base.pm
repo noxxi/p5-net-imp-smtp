@@ -5,6 +5,7 @@ package Net::IMP::SMTP::Base;
 use base 'Net::IMP::Base';
 use fields qw(dispatcher pos);
 use Net::IMP;
+use Net::IMP::SMTP;
 use Carp 'croak';
 
 

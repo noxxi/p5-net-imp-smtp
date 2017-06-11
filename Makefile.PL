@@ -5,7 +5,7 @@ WriteMakefile(
     VERSION_FROM => 'lib/Net/IMP/SMTP.pm',
     LICENSE => 'perl',
     PREREQ_PM => {
-	Net::IMP => 0.617,
+	Net::IMP => 0.634,
     },
     META_MERGE => {
 	resources => {
